@@ -73,7 +73,7 @@ class CD_APD_Admin extends CD_APD_Core
 
 
 	/**
-	 * constructor
+	 * Constructor
 	 * 
 	 * @since  0.1
 	 * @return void
@@ -82,6 +82,32 @@ class CD_APD_Admin extends CD_APD_Core
 	{
 		add_action( 'plugins_loaded', array( $this, 'setup_actions' ), 11 );
 		add_action( 'load-plugins.php', array( $this, 'init' ) );
+
+		# add_filter( 'pre_option_active_plugins', array( $this, 'option_active_plugins' ), 20 );
+	}
+
+
+	/**
+	 * Intercept the 'active_plugins' option and show our plugins as "Active"
+	 * 
+	 * @since  1.2
+	 * @param  bool false
+	 * @return mixed bool/array $value false by default, array of custom plugins else
+	 */
+	public function option_active_plugins( $value )
+	{
+		global $wp_plugin_directories;
+
+		$dir = $this->get_plugin_status();
+
+		// Abort if not in custom directory
+		if ( ! $dir )
+			return $value;
+
+		#if ( $value = get_option( "active_plugins_{$dir}" ) )
+		#	return serialize( $value );
+
+		return $value;
 	}
 
 
@@ -119,22 +145,29 @@ class CD_APD_Admin extends CD_APD_Core
 
 		$this->get_plugins();
 
-		$this->handle_actions();
-
-		add_filter( "views_{$screen->id}", array( $this, 'views' ) );
+		add_filter( "views_{$screen->id}", array( $this, 'views' ), 100 );
 
 		// check to see if we're using one of our custom directories
 		if ( $this->get_plugin_status() )
 		{
+			$this->handle_actions();
+
+			add_filter( "views_{$screen->id}", array( $this, 'views_hide' ), 110 );
+
 			// Disable default "advanced" plugins. Inside the callback, 
 			// the 2nd arg is either for "Must Use" => 'mustuse' and for "DropIns" => 'dropins'.
-			add_filter( 'show_advanced_plugins', '__return_false', 10, 2 );
+			#add_filter( 'show_advanced_plugins', '__return_false', 10, 2 );
 
-			#add_filter( "views_{$screen->id}", array( $this, 'views_again' ) );
+			// Include plugins from custom Dir in list
 			add_filter( 'all_plugins', array( $this, 'filter_plugins' ) );
+
 			// @TODO: support bulk actions
 			add_filter( "bulk_actions-{$screen->id}", '__return_empty_array' );
+
+			// Activate/Deactivate links
 			add_filter( 'plugin_action_links', array( $this, 'action_links' ), 10, 2 );
+
+			// Custom UI stuff
 			add_action( 'admin_enqueue_scripts', array( $this, 'scripts' ) );
 		}
 	}
@@ -154,7 +187,7 @@ class CD_APD_Admin extends CD_APD_Core
 		// bail if we don't have any extra dirs
 		if ( empty( $wp_plugin_directories ) ) 
 			return $views;
-echo '<pre>'; print_r( $totals ); echo '</pre>';
+
 		// Add our directories to the action links
 		foreach ( $wp_plugin_directories as $key => $info )
 		{
@@ -164,11 +197,11 @@ echo '<pre>'; print_r( $totals ); echo '</pre>';
 				continue;
 
 			$views[ $key ] = sprintf( 
-				'<a href="%s"%s>%s <span class="count">(%d)</span></a>',
-				add_query_arg( 'plugin_status', $key, 'plugins.php' ),
-				$this->get_plugin_status() == $key ? ' class="current" ' : '',
-				esc_html( $info['label'] ),
-				$count
+				 '<a href="%s"%s>%s <span class="count">(%d)</span></a>'
+				,add_query_arg( 'plugin_status', $key, 'plugins.php' )
+				,$this->get_plugin_status() == $key ? ' class="current" ' : ''
+				,esc_html( $info['label'] )
+				,$count
 			);
 		}
 
@@ -177,17 +210,18 @@ echo '<pre>'; print_r( $totals ); echo '</pre>';
 
 
 	/**
-	 * Unset inactive plugin link as it doesn't really work for this view
+	 * Unset no needed/currently possible views
 	 * 
 	 * @since  0.1
+	 * 
 	 * @param  array $views
 	 * @return array $views
 	 */
-	public function views_again( $views )
+	public function views_hide( $views )
 	{
-		if ( isset( $views['inactive'] ) ) 
+		if ( $this->get_plugin_status() )
 			unset( $views['inactive'] );
-echo '<pre> '.__LINE__.__FILE__.' '; print_r( $views ); echo '</pre>';
+
 		return $views;
 	}
 
@@ -205,7 +239,7 @@ echo '<pre> '.__LINE__.__FILE__.' '; print_r( $views ); echo '</pre>';
 		if ( $key )
 		{
 			$this->all_count = count( $plugins );
-			$plugins = $this->plugins[ $key] ;
+			$plugins = $this->plugins[ $key ];
 		}
 
 		return $plugins;
@@ -222,7 +256,7 @@ echo '<pre> '.__LINE__.__FILE__.' '; print_r( $views ); echo '</pre>';
 	 */
 	public function action_links( $links, $plugin_file )
 	{
-		$context = $this->get_plugin_status();
+		$context = str_replace( ' ', '%20', $this->get_plugin_status() );
 
 		$active = get_option( "active_plugins_{$context}", array() );
 
@@ -231,24 +265,24 @@ echo '<pre> '.__LINE__.__FILE__.' '; print_r( $views ); echo '</pre>';
 		if ( ! in_array( $plugin_file, $active ) )
 		{
 			$links['activate'] = sprintf(
-				'<a href="%s" title="Activate this plugin">%s</a>',
-				wp_nonce_url( 
-					"plugins.php?action=custom_activate&amp;plugin={$plugin_file}&amp;plugin_status=".esc_attr( $context ), 
-					"custom_activate-{$plugin_file}" 
-				),
-				__( 'Activate' )
+				 '<a href="%s" title="Activate this plugin">%s</a>'
+				,wp_nonce_url( 
+					 "plugins.php?action=custom_activate&amp;plugin={$plugin_file}&amp;plugin_status=".esc_attr( $context ) 
+					,"custom_activate-{$plugin_file}" 
+				 )
+				,__( 'Activate' )
 			);
 		}
 
 		if ( in_array( $plugin_file, $active ) )
 		{
 			$links['deactivate'] = sprintf(
-				'<a href="%s" title="Deactivate this plugin" class="cd-apd-deactivate">%s</a>',
-				wp_nonce_url( 
-					"plugins.php?action=custom_deactivate&amp;plugin={$plugin_file}&amp;plugin_status=".esc_attr( $context ), 
-					"custom_deactivate-{$plugin_file}" 
-				),
-				__( 'Deactivate' )
+				 '<a href="%s" title="Deactivate this plugin" class="cd-apd-deactivate">%s</a>'
+				,wp_nonce_url(
+					 "plugins.php?action=custom_deactivate&amp;plugin={$plugin_file}&amp;plugin_status=".esc_attr( $context ) 
+					,"custom_deactivate-{$plugin_file}" 
+				 )
+				,__( 'Deactivate' )
 			);
 		}
 
@@ -339,6 +373,8 @@ echo '<pre> '.__LINE__.__FILE__.' '; print_r( $views ); echo '</pre>';
 	{
 		$action = isset( $_REQUEST['action'] ) ? $_REQUEST['action'] : '';
 
+		$context = str_replace( ' ', '%20', $this->get_plugin_status() );
+
 		// not allowed to handle this action? bail.
 		if ( ! in_array( $action, $this->actions ) ) return;
 
@@ -347,8 +383,6 @@ echo '<pre> '.__LINE__.__FILE__.' '; print_r( $views ); echo '</pre>';
 
 		if ( ! $plugin )
 			return;
-
-		$context = $this->get_plugin_status();
 
 		switch( $action )
 		{
@@ -372,7 +406,7 @@ echo '<pre> '.__LINE__.__FILE__.' '; print_r( $views ); echo '</pre>';
 								self_admin_url( 'plugins.php' ) 
 							) 
 						) );
-						exit();
+						exit;
 					}
 					else 
 					{
@@ -384,7 +418,7 @@ echo '<pre> '.__LINE__.__FILE__.' '; print_r( $views ); echo '</pre>';
 					array( 'plugin_status' => $context, 'activate' => 'true' ), 
 					self_admin_url( 'plugins.php' ) 
 				) );
-				exit();
+				exit;
 				break;
 
 			case 'custom_deactivate':
@@ -405,7 +439,7 @@ echo '<pre> '.__LINE__.__FILE__.' '; print_r( $views ); echo '</pre>';
 				else
 				{
 					wp_redirect( self_admin_url( "plugins.php?deactivate=true&plugin_status={$context}" ) );
-					exit();
+					exit;
 				}
 				break;
 
@@ -421,7 +455,7 @@ echo '<pre> '.__LINE__.__FILE__.' '; print_r( $views ); echo '</pre>';
 	 * The key returns FALSE if our key isn't in the the custom directories
 	 * 
 	 * @since  0.1
-	 * @return bool|string $rv False on failure, the `$wp_plugin_directories` key on success
+	 * @return mixed bool|string $rv false on failure, the `$wp_plugin_directories` key on success
 	 */
 	public function get_plugin_status()
 	{
@@ -429,8 +463,11 @@ echo '<pre> '.__LINE__.__FILE__.' '; print_r( $views ); echo '</pre>';
 
 		$rv = false;
 
+		if ( ! isset( $wp_plugin_directories ) )
+			return $rv;
+
 		if ( 
-			isset( $_GET['plugin_status'] ) 
+			isset( $_GET['plugin_status'] )
 			AND in_array( $_GET['plugin_status'], array_keys( $wp_plugin_directories ) ) 
 			)
 		{

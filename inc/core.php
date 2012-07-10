@@ -37,9 +37,9 @@ class CD_APD_Core
 	public function load_plugins()
 	{
 		global $wp_plugin_directories;
-	
+
 		empty( $wp_plugin_directories ) AND $wp_plugin_directories = array();
-	
+
 		foreach ( array_keys( $wp_plugin_directories ) as $key )
 		{
 			$active = get_option( "active_plugins_{$key}", array() );
@@ -144,6 +144,9 @@ class CD_APD_Core
 	 * Custom plugin activation function.
 	 * 
 	 * @since  0.1
+	 * @param  array $plugins
+	 * @param  string $context
+	 * @param  bool $silent
 	 * @return void
 	 */
 	public function activate_plugin( $plugin, $context, $silent = false ) 
@@ -196,6 +199,7 @@ class CD_APD_Core
 				return new WP_Error( 'unexpected_output', __( 'The plugin generated unexpected output.' ), $output );
 			}
 			ob_end_clean();
+			exit;
 		}
 
 		return true;
@@ -206,6 +210,9 @@ class CD_APD_Core
 	 * Deactivate custom plugins
 	 * 
 	 * @since  0.1
+	 * @param  array $plugins
+	 * @param  string $context
+	 * @param  bool $silent
 	 * @return void
 	 */
 	public function deactivate_plugins( $plugins, $context, $silent = false )

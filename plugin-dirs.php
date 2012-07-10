@@ -1,10 +1,10 @@
 <?php
 ! defined( 'ABSPATH' ) AND exit();
 /*
-Plugin Name:  Additional Plugin Directories
+Plugin Name:  Additional Plugin Directories 2
 Plugin URI:   http://github.com/chrisguitarguy
 Description:  A framework to allow adding additional plugin directories to WordPress
-Version:      1.1
+Version:      1.2
 Author:       Christopher Davis
 Contributors: Franz Josef Kaiser, Julien Chaumond
 Author URI:   http://christopherdavis.me
@@ -112,7 +112,8 @@ class CD_APD_Bootstrap
 
 		// Updates from GitHub
 		// $ git submodule add git://github.com/franz-josef-kaiser/WordPress-GitHub-Plugin-Updater inc/updater
-		add_action( 'init', array( $this, 'update_from_github' ), 0 );
+		add_action( 'load-plugins.php', array( $this, 'update_from_github' ), 0 );
+		add_action( 'load-plugin_install.php', array( $this, 'update_from_github' ), 0 );
 	}
 
 

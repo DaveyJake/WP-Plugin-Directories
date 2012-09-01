@@ -10,4 +10,8 @@ For an example, take a look at the `example_plugin` folder and the `register_add
 
 You need to copy this folder to your actual plugins folder and then activate it from within your plugins list. It only works if the main plugin is activated.
 
-*) the one you defined with the `WP_PLUGIN_DIR` or `WPMU_PLUGIN_DIR` in your wp-config.php file - or the default `plugins` folder in your install.
+<sup>*) the one you defined with the `WP_PLUGIN_DIR` or `WPMU_PLUGIN_DIR` in your wp-config.php file - or the default `plugins` folder in your install.</sup>
+
+### Screenshot
+
+<img src="https://github.com/franz-josef-kaiser/WP-Plugin-Directories/blob/master/screenshot-1.png" />

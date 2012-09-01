@@ -14,4 +14,4 @@ You need to copy this folder to your actual plugins folder and then activate it 
 
 ### Screenshot
 
-<img src="https://github.com/franz-josef-kaiser/WP-Plugin-Directories/blob/master/screenshot-1.png" />
+<img src="https://raw.github.com/franz-josef-kaiser/WP-Plugin-Directories/master/screenshot-1.png" />

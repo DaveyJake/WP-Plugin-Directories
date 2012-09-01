@@ -16,7 +16,7 @@ License:      GNU GPL 2
 // Avoid loading twice
 if ( ! class_exists( 'dmb_bootstrap' ) )
 {
-	add_action( 'plugins_loaded', array( 'CD_APD_Bootstrap', 'init' ), 5 );
+	add_action( 'plugins_loaded', array( 'CD_APD_Bootstrap', 'init' ), 0 );
 
 /**
  * Bootstrap for delayed Meta Boxes
@@ -48,9 +48,9 @@ class CD_APD_Bootstrap
 	 * @var array string Class Name w/o prefix (Hint: Naming convention!) Use the value to define if need to hook the class.
 	 */
 	static public $includes = array(
-		 'api'   => false
-		,'core'  => false
+		 'core'  => false
 		,'admin' => true
+		,'api'   => false
 	);
 
 
@@ -87,6 +87,9 @@ class CD_APD_Bootstrap
 	 */
 	public function __construct()
 	{
+		global $wp_plugin_directories;
+		$wp_plugin_directories = array();
+
 		// Localize
 		load_theme_textdomain( 'cd_apd_textdomain', plugin_dir_path( __FILE__ )."lang" );
 
@@ -104,7 +107,7 @@ class CD_APD_Bootstrap
 			// Build class name
 			$class = "CD_APD_".ucwords( $inc );
 
-			class_exists( $class ) AND add_action( 'plugins_loaded', array( $class, 'instance' ) );
+			class_exists( $class ) AND add_action( 'plugins_loaded', array( $class, 'instance' ), 1 );
 		}
 
 		if ( ! is_admin() )

@@ -1,8 +1,5 @@
 <?php
 ! defined( 'ABSPATH' ) AND exit();
-
-
-
 /**
  * The central API
  * 
@@ -33,7 +30,7 @@ function register_plugin_directory( $args, $deprecated_dir = '', $deprecated_lab
 	{
 		_doing_it_wrong( 
 			 __FUNCTION__
-			,__( 'Registering a new plugin directory should be done during the `plugins_loaded` hook on priority `0`.', 'cd_apd_textdomain' )
+			,__( 'Registering a new plugin directory should be done during the `plugins_loaded` hook on priority `10`.', 'cd_apd_textdomain' )
 			,'0.1'
 		);
 	}

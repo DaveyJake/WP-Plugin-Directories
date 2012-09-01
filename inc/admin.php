@@ -80,10 +80,29 @@ class CD_APD_Admin extends CD_APD_Core
 	 */
 	public function __construct()
 	{
-		add_action( 'plugins_loaded', array( $this, 'setup_actions' ), 11 );
+		add_action( 'plugins_loaded', array( $this, 'setup_actions' ), 2 );
 		add_action( 'load-plugins.php', array( $this, 'init' ) );
 
+		add_action( 'admin_head-plugins.php', array( $this, 'style' ) );
+
 		# add_filter( 'pre_option_active_plugins', array( $this, 'option_active_plugins' ), 20 );
+
+		parent :: __construct();
+	}
+
+
+	public function style()
+	{
+		?>
+		<style type="text/css">
+		.subsubsub {
+			width: 100%;
+		}
+		.subsubsub li {
+			float: left;
+		}
+		</style>
+		<?php
 	}
 
 
@@ -104,8 +123,8 @@ class CD_APD_Admin extends CD_APD_Core
 		if ( ! $dir )
 			return $value;
 
-		#if ( $value = get_option( "active_plugins_{$dir}" ) )
-		#	return serialize( $value );
+		if ( $value = get_option( "active_plugins_{$dir}" ) )
+			return serialize( $value );
 
 		return $value;
 	}
@@ -165,7 +184,8 @@ class CD_APD_Admin extends CD_APD_Core
 			add_filter( "bulk_actions-{$screen->id}", '__return_empty_array' );
 
 			// Activate/Deactivate links
-			add_filter( 'plugin_action_links', array( $this, 'action_links' ), 10, 2 );
+			add_filter( 'plugin_action_links', array( $this, 'action_links' ), 10, 4 );
+			#add_filter( 'network_admin_plugin_action_links', array( $this, 'action_links' ), 10, 4 );
 
 			// Custom UI stuff
 			add_action( 'admin_enqueue_scripts', array( $this, 'scripts' ) );
@@ -250,37 +270,39 @@ class CD_APD_Admin extends CD_APD_Core
 	 * Correct some action links so we can actually "activate" plugins
 	 * 
 	 * @since  0.1
-	 * @param  array  $links
-	 * @param  string $plugin_file
+	 * @param  array $links
+	 * @param  string $file
+	 * @param  array $data
+	 * @param  string $context
 	 * @return array  $links
 	 */
-	public function action_links( $links, $plugin_file )
+	public function action_links( $links, $file, $data, $context )
 	{
-		$context = str_replace( ' ', '%20', $this->get_plugin_status() );
+		$context = $this->get_plugin_status();
 
 		$active = get_option( "active_plugins_{$context}", array() );
 
 		// let's just start over
 		$links = array();
-		if ( ! in_array( $plugin_file, $active ) )
+		if ( ! in_array( $file, $active ) )
 		{
 			$links['activate'] = sprintf(
 				 '<a href="%s" title="Activate this plugin">%s</a>'
 				,wp_nonce_url( 
-					 "plugins.php?action=custom_activate&amp;plugin={$plugin_file}&amp;plugin_status=".esc_attr( $context ) 
-					,"custom_activate-{$plugin_file}" 
+					 "plugins.php?action=custom_activate&amp;plugin={$file}&amp;plugin_status=".esc_attr( $context ) 
+					,"custom_activate-{$file}" 
 				 )
 				,__( 'Activate' )
 			);
 		}
 
-		if ( in_array( $plugin_file, $active ) )
+		if ( in_array( $file, $active ) )
 		{
 			$links['deactivate'] = sprintf(
 				 '<a href="%s" title="Deactivate this plugin" class="cd-apd-deactivate">%s</a>'
 				,wp_nonce_url(
-					 "plugins.php?action=custom_deactivate&amp;plugin={$plugin_file}&amp;plugin_status=".esc_attr( $context ) 
-					,"custom_deactivate-{$plugin_file}" 
+					 "plugins.php?action=custom_deactivate&amp;plugin={$file}&amp;plugin_status=".esc_attr( $context ) 
+					,"custom_deactivate-{$file}" 
 				 )
 				,__( 'Deactivate' )
 			);
@@ -312,11 +334,11 @@ class CD_APD_Admin extends CD_APD_Core
 			,filemtime( $this->scripts_file_cb( 'path' )."apd.js" )
 		);
 		wp_localize_script(
-			'cd-apd-js',
-			'cd_apd',
-			array(
+			 'cd-apd-js'
+			,'cd_apd'
+			,array(
 				'count' => esc_js( $this->all_count )
-			)
+			 )
 		);
 	}
 
@@ -357,7 +379,7 @@ class CD_APD_Admin extends CD_APD_Core
 
 		foreach ( array_keys( $wp_plugin_directories ) as $key )
 		{
-			$this->plugins[ $key ] = $this->get_plugins_from_cache( $key );
+			$this->plugins[ $key ] = $this->get_plugins_from_cache( $key	 );
 		}
 	}
 
@@ -376,7 +398,8 @@ class CD_APD_Admin extends CD_APD_Core
 		$context = str_replace( ' ', '%20', $this->get_plugin_status() );
 
 		// not allowed to handle this action? bail.
-		if ( ! in_array( $action, $this->actions ) ) return;
+		if ( ! in_array( $action, $this->actions ) )
+			return;
 
 		// Get the plugin we're going to activate
 		$plugin = isset( $_REQUEST['plugin'] ) ? $_REQUEST['plugin'] : false;
@@ -401,9 +424,9 @@ class CD_APD_Admin extends CD_APD_Core
 							'_error_nonce',
 							wp_create_nonce( "plugin-activation-error_{$plugin}" ),
 							add_query_arg( 
-								'plugin_status', 
-								$context, 
-								self_admin_url( 'plugins.php' ) 
+								 'plugin_status'
+								,$context
+								,self_admin_url( 'plugins.php' ) 
 							) 
 						) );
 						exit;
@@ -415,8 +438,11 @@ class CD_APD_Admin extends CD_APD_Core
 				}
 
 				wp_redirect( add_query_arg( 
-					array( 'plugin_status' => $context, 'activate' => 'true' ), 
-					self_admin_url( 'plugins.php' ) 
+					 array( 
+					 	 'plugin_status' => $context
+					 	,'activate'      => 'true' 
+					 )
+					,self_admin_url( 'plugins.php' )
 				) );
 				exit;
 				break;
@@ -432,8 +458,8 @@ class CD_APD_Admin extends CD_APD_Core
 				if ( headers_sent() )
 				{
 					printf( 
-						"<meta http-equiv='refresh' content='%s' />",
-						esc_attr( "0;url=plugins.php?deactivate=true&plugin_status={$status}&paged={$page}&s={$s}" )
+						 "<meta http-equiv='refresh' content='%s' />"
+						,esc_attr( "0;url=plugins.php?deactivate=true&plugin_status={$status}&paged={$page}&s={$s}" )
 					);
 				}
 				else

@@ -37,5 +37,4 @@ function cd_apd_register_additional_plugin_directories()
 		,'root'  => 'plugins'
 	) );
 }
-// Needs to be added on the `plugins_loaded` hook with a priority of `0`.
 add_action( 'plugins_loaded', 'cd_apd_register_additional_plugin_directories', 0 );

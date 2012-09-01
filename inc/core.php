@@ -23,7 +23,7 @@ class CD_APD_Core
 	 */
 	public function __construct()
 	{
-		add_action( 'plugins_loaded', array( $this, 'load_plugins' ), 99 );
+		add_action( 'plugins_loaded', array( $this, 'load_plugins' ), 2 );
 	}
 
 
@@ -47,7 +47,7 @@ class CD_APD_Core
 			{
 				if ( file_exists( "{$wp_plugin_directories[ $key ]['dir']}/{$a}" ) )
 				{
-					include_once( "{$wp_plugin_directories[ $key ]['dir']}/{$a}" );
+					include_once "{$wp_plugin_directories[ $key ]['dir']}/{$a}";
 				}
 			}
 		}
@@ -245,7 +245,7 @@ class CD_APD_Core
 
 
 	/**
-	 * Checks to see whether the plugin and is valid and can be activated.
+	 * Checks to see whether the plugin is valid and can be activated.
 	 * 
 	 * @uses validate_file To make sure the plugin name is okay.
 	 * @param  string $plugin
@@ -266,8 +266,9 @@ class CD_APD_Core
 		{
 			$rv = new WP_Error( 'invalid_context', __( 'The context for this plugin does not exist' ) );
 		}
-	
-		$dir = $wp_plugin_directories[ $context ]['dir'];
+
+		$context = str_replace( '%20', ' ', $context );
+		$dir     = $wp_plugin_directories[ $context ]['dir'];
 		if ( ! file_exists( "{$dir}/{$plugin}" ) )
 		{
 			$rv = new WP_Error( 'plugin_not_found', __( 'Plugin file does not exist.' ) );

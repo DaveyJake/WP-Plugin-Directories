@@ -25,6 +25,7 @@
  */
 function register_plugin_directory( $args, $deprecated_dir = '', $deprecated_label = '' )
 {
+/*
 	// The call was too late (or too early in case of a MU-Plugin)
 	if ( 'plugins_loaded' !== current_filter() )
 	{
@@ -34,7 +35,7 @@ function register_plugin_directory( $args, $deprecated_dir = '', $deprecated_lab
 			,'0.1'
 		);
 	}
-
+*/
 	// Deprecating single arguments
 	if ( ! is_array( $args ) )
 	{
@@ -73,7 +74,12 @@ function register_plugin_directory( $args, $deprecated_dir = '', $deprecated_lab
 	}
 
 	// Build $key from $label
-	$key = strtolower( preg_replace( "/[^a-zA-Z0-9\s]/", "", $args['label'] ) );
+	// Allowed values are: a-z, A-Z, 0-9, - and _
+	$key = strtolower( preg_replace( 
+		 "/[^a-zA-Z0-9-_\s]/"
+		,""
+		,$args['label']
+	) );
 
 	// Return FALSE in case we already got the key
 	if ( isset( $wp_plugin_directories[ $key ] ) )

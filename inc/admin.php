@@ -65,7 +65,7 @@ class CD_APD_Admin extends CD_APD_Core
 	 * @static
 	 * @return void
 	 */
-	public static function instance()
+	public static function init()
 	{
 		null === self :: $instance AND self :: $instance = new self;
 		return self :: $instance;
@@ -80,14 +80,78 @@ class CD_APD_Admin extends CD_APD_Core
 	 */
 	public function __construct()
 	{
-		add_action( 'plugins_loaded', array( $this, 'setup_actions' ), 2 );
-		add_action( 'load-plugins.php', array( $this, 'init' ) );
+		$this->setup_actions();
+		#add_action( 'plugins_loaded', array( $this, 'setup_actions' ), 1 );
+		add_action( 'load-plugins.php', array( $this, 'setup' ) );
 
 		add_action( 'admin_head-plugins.php', array( $this, 'style' ) );
 
 		# add_filter( 'pre_option_active_plugins', array( $this, 'option_active_plugins' ), 20 );
 
 		parent :: __construct();
+	}
+
+
+	/**
+	 * Sets up which actions we can handle with this plugin. We'll use this
+	 * to catch activations and deactivations as the normal way won't work.
+	 * Has the filter 'custom_plugin_actions' to allow extensions.
+	 * 
+	 * @since  0.1
+	 * @return void
+	 */
+	public function setup_actions()
+	{
+		$this->actions = apply_filters( 
+			'custom_plugin_actions',
+			array(
+				'custom_activate',
+				'custom_deactivate'
+			)
+		);
+	}
+
+
+	/**
+	 * Makes the magic happen. Loads all the other hooks to modify the plugin list table
+	 * 
+	 * @since  0.1
+	 * @return void
+	 */
+	public function setup()
+	{
+		global $wp_plugin_directories;
+
+		$screen = get_current_screen();
+
+		$this->get_plugins();
+
+		add_filter( "views_{$screen->id}", array( $this, 'views' ), 100 );
+
+		// check to see if we're using one of our custom directories
+		if ( $this->get_plugin_status() )
+		{
+			$this->handle_actions();
+
+			add_filter( "views_{$screen->id}", array( $this, 'views_hide' ), 110 );
+
+			// Disable default "advanced" plugins. Inside the callback, 
+			// the 2nd arg is either for "Must Use" => 'mustuse' and for "DropIns" => 'dropins'.
+			#add_filter( 'show_advanced_plugins', '__return_false', 10, 2 );
+
+			// Include plugins from custom Dir in list
+			add_filter( 'all_plugins', array( $this, 'filter_plugins' ) );
+
+			// @TODO: support bulk actions
+			add_filter( "bulk_actions-{$screen->id}", '__return_empty_array' );
+
+			// Activate/Deactivate links
+			add_filter( 'plugin_action_links', array( $this, 'action_links' ), 10, 4 );
+			#add_filter( 'network_admin_plugin_action_links', array( $this, 'action_links' ), 10, 4 );
+
+			// Custom UI stuff
+			add_action( 'admin_enqueue_scripts', array( $this, 'scripts' ) );
+		}
 	}
 
 
@@ -127,69 +191,6 @@ class CD_APD_Admin extends CD_APD_Core
 			return serialize( $value );
 
 		return $value;
-	}
-
-
-	/**
-	 * Sets up which actions we can handle with this plugin. We'll use this
-	 * to catch activations and deactivations as the normal way won't work.
-	 * Has the filter 'custom_plugin_actions' to allow extensions.
-	 * 
-	 * @since  0.1
-	 * @return void
-	 */
-	public function setup_actions()
-	{
-		$this->actions = apply_filters( 
-			'custom_plugin_actions',
-			array(
-				'custom_activate',
-				'custom_deactivate'
-			)
-		);
-	}
-
-
-	/**
-	 * Makes the magic happen. Loads all the other hooks to modify the plugin list table
-	 * 
-	 * @since  0.1
-	 * @return void
-	 */
-	public function init()
-	{
-		global $wp_plugin_directories;
-
-		$screen = get_current_screen();
-
-		$this->get_plugins();
-
-		add_filter( "views_{$screen->id}", array( $this, 'views' ), 100 );
-
-		// check to see if we're using one of our custom directories
-		if ( $this->get_plugin_status() )
-		{
-			$this->handle_actions();
-
-			add_filter( "views_{$screen->id}", array( $this, 'views_hide' ), 110 );
-
-			// Disable default "advanced" plugins. Inside the callback, 
-			// the 2nd arg is either for "Must Use" => 'mustuse' and for "DropIns" => 'dropins'.
-			#add_filter( 'show_advanced_plugins', '__return_false', 10, 2 );
-
-			// Include plugins from custom Dir in list
-			add_filter( 'all_plugins', array( $this, 'filter_plugins' ) );
-
-			// @TODO: support bulk actions
-			add_filter( "bulk_actions-{$screen->id}", '__return_empty_array' );
-
-			// Activate/Deactivate links
-			add_filter( 'plugin_action_links', array( $this, 'action_links' ), 10, 4 );
-			#add_filter( 'network_admin_plugin_action_links', array( $this, 'action_links' ), 10, 4 );
-
-			// Custom UI stuff
-			add_action( 'admin_enqueue_scripts', array( $this, 'scripts' ) );
-		}
 	}
 
 
@@ -379,7 +380,7 @@ class CD_APD_Admin extends CD_APD_Core
 
 		foreach ( array_keys( $wp_plugin_directories ) as $key )
 		{
-			$this->plugins[ $key ] = $this->get_plugins_from_cache( $key	 );
+			$this->plugins[ $key ] = $this->get_plugins_from_cache( $key );
 		}
 	}
 
@@ -459,7 +460,7 @@ class CD_APD_Admin extends CD_APD_Core
 				{
 					printf( 
 						 "<meta http-equiv='refresh' content='%s' />"
-						,esc_attr( "0;url=plugins.php?deactivate=true&plugin_status={$status}&paged={$page}&s={$s}" )
+						,esc_attr( "0;url=plugins.php?deactivate=true&plugin_status={$context}&paged={$page}&s={$s}" )
 					);
 				}
 				else

@@ -23,7 +23,7 @@ class CD_APD_Core
 	 */
 	public function __construct()
 	{
-		add_action( 'plugins_loaded', array( $this, 'load_plugins' ), 2 );
+		add_action( 'plugins_loaded', array( $this, 'load_plugins' ), 0 );
 	}
 
 
@@ -80,22 +80,30 @@ class CD_APD_Core
 		$wp_plugins = array();
 
 		$plugins_dir = @ opendir( $plugin_root );
+
 		$plugin_files = array();
 		if ( $plugins_dir )
 		{
 			while ( false !== ( $file = readdir( $plugins_dir ) ) )
 			{
-				if ( '.' === substr( $file, 0, 1 ) )
+				if ( in_array( 
+					 substr( $file, 0, 1 )
+					,array( '.', '..' ) 
+				) )
 					continue;
 
 				if ( is_dir( "{$plugin_root}/{$file}" ) )
 				{
 					$plugins_subdir = @ opendir( "{$plugin_root}/{$file}" );
+
 					if ( $plugins_subdir )
 					{
 						while ( ( $subfile = readdir( $plugins_subdir ) ) !== false )
 						{
-							if ( '.' === substr( $subfile, 0, 1 ) )
+							if ( in_array( 
+								 substr( $file, 0, 1 )
+								,array( '.', '..' ) 
+							) )
 								continue;
 
 							if ( '.php' === substr( $subfile, -4 ) )

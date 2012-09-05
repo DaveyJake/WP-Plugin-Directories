@@ -16,7 +16,7 @@ License:      GNU GPL 2
 // Avoid loading twice
 if ( ! class_exists( 'dmb_bootstrap' ) )
 {
-	add_action( 'plugins_loaded', array( 'CD_APD_Bootstrap', 'init' ), 0 );
+	#add_action( 'plugins_loaded', array( 'CD_APD_Bootstrap', 'init' ), 0 );
 
 /**
  * Bootstrap for delayed Meta Boxes
@@ -45,12 +45,13 @@ class CD_APD_Bootstrap
 	 * @since     0.8
 	 * @access    public
 	 * @static
-	 * @var array string Class Name w/o prefix (Hint: Naming convention!) Use the value to define if need to hook the class.
+	 * @var array string Class Name w/o prefix (Hint: Naming convention!) 
+	 *                   Use the value to define, if the the class should get hooked.
 	 */
 	static public $includes = array(
-		 'core'  => false
+		 'api'   => false
+		,'core'  => false
 		,'admin' => true
-		,'api'   => false
 	);
 
 
@@ -107,11 +108,8 @@ class CD_APD_Bootstrap
 			// Build class name
 			$class = "CD_APD_".ucwords( $inc );
 
-			class_exists( $class ) AND add_action( 'plugins_loaded', array( $class, 'instance' ), 1 );
+			class_exists( $class ) AND $class :: init();
 		}
-
-		if ( ! is_admin() )
-			return;
 
 		// Updates from GitHub
 		// $ git submodule add git://github.com/franz-josef-kaiser/WordPress-GitHub-Plugin-Updater inc/updater
@@ -210,5 +208,8 @@ class CD_APD_Bootstrap
 		);
 	}
 } // END Class CD_APD_Bootstrap
+
+new CD_APD_Bootstrap;
+do_action( 'after_setup_plugindirs' );
 
 } // endif;

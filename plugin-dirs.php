@@ -4,7 +4,7 @@
 Plugin Name:  Additional Plugin Directories 2
 Plugin URI:   http://github.com/chrisguitarguy
 Description:  A framework to allow adding additional plugin directories to WordPress
-Version:      1.2
+Version:      1.4
 Author:       Christopher Davis
 Contributors: Franz Josef Kaiser, Julien Chaumond
 Author URI:   http://christopherdavis.me
@@ -20,11 +20,11 @@ if ( ! class_exists( 'dmb_bootstrap' ) )
 
 /**
  * Bootstrap for delayed Meta Boxes
- * 
+ *
  * @author     Franz Josef Kaiser, Christopher Davis
  * @license    GNU GPL 2
  * @copyright  © Franz Josef Kaiser, Christopher Davis 2011-2012
- * 
+ *
  * @package    WordPress
  * @subpackage Additional Plugin Directories: Bootstrap
  */
@@ -32,7 +32,7 @@ class CD_APD_Bootstrap
 {
 	/**
 	 * Instance
-	 * 
+	 *
 	 * @access protected
 	 * @var object
 	 */
@@ -41,11 +41,11 @@ class CD_APD_Bootstrap
 
 	/**
 	 * The files that need to get included
-	 * 
+	 *
 	 * @since     0.8
 	 * @access    public
 	 * @static
-	 * @var array string Class Name w/o prefix (Hint: Naming convention!) 
+	 * @var array string Class Name w/o prefix (Hint: Naming convention!)
 	 *                   Use the value to define, if the the class should get hooked.
 	 */
 	static public $includes = array(
@@ -59,7 +59,7 @@ class CD_APD_Bootstrap
 	 * Used for update notices
 	 * Fetches the readme file from the official plugin repo trunk.
 	 * Adds to the "in_plugin_update_message-$file" hook
-	 * 
+	 *
 	 * @var (string)
 	 */
 	public $remote_changelog = 'https://raw.github.com/chrisguitarguy/WP-Plugin-Directories/master/changelog.html';
@@ -67,7 +67,7 @@ class CD_APD_Bootstrap
 
 	/**
 	 * Creates a new static instance
-	 * 
+	 *
 	 * @since  0.8
 	 * @static
 	 * @return void
@@ -81,7 +81,7 @@ class CD_APD_Bootstrap
 
 	/**
 	 * Constructor
-	 * 
+	 *
 	 * @since  0.8
 	 * @access public
 	 * @return void
@@ -98,7 +98,7 @@ class CD_APD_Bootstrap
 		foreach ( self :: $includes as $inc => $init )
 		{
 			// Load file: trailingslashed by core
-			# Tested: calling plugin_dir_path() directly saves 1/2 time 
+			# Tested: calling plugin_dir_path() directly saves 1/2 time
 			# instead of saving the plugin_dir_path() in a $var and recalling here
 			require_once plugin_dir_path( __FILE__ )."inc/{$inc}.php";
 
@@ -113,15 +113,15 @@ class CD_APD_Bootstrap
 
 		// Updates from GitHub
 		// $ git submodule add git://github.com/franz-josef-kaiser/WordPress-GitHub-Plugin-Updater inc/updater
-		add_action( 'load-plugins.php', array( $this, 'update_from_github' ), 0 );
-		add_action( 'load-plugin_install.php', array( $this, 'update_from_github' ), 0 );
+		# add_action( 'load-plugins.php', array( $this, 'update_from_github' ), 0 );
+		# add_action( 'load-plugin_install.php', array( $this, 'update_from_github' ), 0 );
 	}
 
 
 	/**
-	 * 
+	 *
 	 * @since 1.0
-	 * 
+	 *
 	 * @return void
 	 */
 	public function update_from_github()
@@ -149,7 +149,7 @@ class CD_APD_Bootstrap
 			,'requires'           => $wp_version
 			,'tested'             => $wp_version
 			,'readme_file'        => 'readme.md'
-			,'description'        => array( 
+			,'description'        => array(
 				'changelog' => $this->update_message()
 			 )
 		) );
@@ -158,7 +158,7 @@ class CD_APD_Bootstrap
 
 	/**
 	 * Callback to set the SSL verification for HTTP requests to GitHub to false
-	 * 
+	 *
 	 * @since  1.0
 	 * @param  array  $args
 	 * @param  string $url
@@ -178,19 +178,19 @@ class CD_APD_Bootstrap
 	/**
 	 * Displays an update message for plugin list screens.
 	 * Shows only the version updates from the current until the newest version
-	 * 
+	 *
 	 * @uses WordPress HTTP API
 	 * @uses $allowed_html and $allowed_protocolls inside `install_plugin_information()`
-	 * 
+	 *
 	 * @since  0.9
 	 * @return string The actual Output message
 	 */
 	public function update_message()
 	{
 		// Get `changelog.txt` from GitHub via WP HTTP API
-		$remote_data = wp_remote_get( 
+		$remote_data = wp_remote_get(
 			 $this->remote_changelog
-			,false 
+			,false
 		);
 
 		// Die silently
@@ -200,9 +200,9 @@ class CD_APD_Bootstrap
 			return _e( 'No changelog could get fetched.', 'cd_apd_textdomain' );
 
 		if ( 404 === $response )
-			return $remote_data['response']['message']; 
+			return $remote_data['response']['message'];
 
-		return sprintf( 
+		return sprintf(
 			 "<p style='font-weight:normal;'>%s</p>"
 			,wp_remote_retrieve_body( $remote_data )
 		);

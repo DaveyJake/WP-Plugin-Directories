@@ -8,18 +8,18 @@ if ( ! class_exists( 'CD_APD_Core' ) )
 
 /**
  * Core
- * 
+ *
  * @author     Christopher Davis, Franz Josef Kaiser
  * @license    GPL
  * @copyright  © Christopher Davis, Franz Josef Kaiser 2011-2012
- * 
+ *
  * @package    WordPress
  * @subpackage Additional Plugin Directories: Core
  */
 class CD_APD_Core
 {
 	/**
-	 * 
+	 *
 	 */
 	public function __construct()
 	{
@@ -28,9 +28,9 @@ class CD_APD_Core
 
 
 	/**
-	 * Loads additional plugins from custom directories. 
+	 * Loads additional plugins from custom directories.
 	 * To add a directory, you must do so in a plugin (hooked into `plugins_loaded` with a low priority).
-	 * 
+	 *
 	 * @since  0.1
 	 * @return void
 	 */
@@ -45,9 +45,12 @@ class CD_APD_Core
 			$active = get_option( "active_plugins_{$key}", array() );
 			foreach( $active as $a )
 			{
-				if ( file_exists( "{$wp_plugin_directories[ $key ]['dir']}/{$a}" ) )
+				$root = explode( '/', $wp_plugin_directories[ $key ]['dir'] );
+				array_pop( $root );
+				$root = trailingslashit( implode( DIRECTORY_SEPARATOR, $root ) );
+				if ( file_exists( "{$root}/{$a}" ) )
 				{
-					include_once "{$wp_plugin_directories[ $key ]['dir']}/{$a}";
+					include_once "{$root}/{$a}";
 				}
 			}
 		}
@@ -56,12 +59,12 @@ class CD_APD_Core
 
 	/**
 	 * Get the valid plugins from the custom directory
-	 * 
+	 *
 	 * @since  0.1
 	 * @param  $dir_key The `key` of our custom plugin directory
 	 * @return array A list of the plugins
 	 */
-	public function get_plugins_from_cache( $dir_key ) 
+	public function get_plugins_from_cache( $dir_key )
 	{
 		global $wp_plugin_directories;
 
@@ -86,9 +89,9 @@ class CD_APD_Core
 		{
 			while ( false !== ( $file = readdir( $plugins_dir ) ) )
 			{
-				if ( in_array( 
+				if ( in_array(
 					 substr( $file, 0, 1 )
-					,array( '.', '..' ) 
+					,array( '.', '..' )
 				) )
 					continue;
 
@@ -100,9 +103,14 @@ class CD_APD_Core
 					{
 						while ( ( $subfile = readdir( $plugins_subdir ) ) !== false )
 						{
-							if ( in_array( 
+							if ( in_array(
 								 substr( $file, 0, 1 )
-								,array( '.', '..' ) 
+								,array( '.', '..' )
+							) )
+								continue;
+							if ( in_array(
+								substr( $subfile, 0, 1 )
+								,array( '.', '..' )
 							) )
 								continue;
 
@@ -134,6 +142,10 @@ class CD_APD_Core
 			if ( empty ( $plugin_data['Name'] ) )
 				continue;
 
+			// Fixes the change in WP 3.4.2 @link http://goo.gl/O4tdL
+			$r = explode( '/', $plugin_root );
+			$plugin_file = "{$r[1]}/{$plugin_file}";
+
 			$wp_plugins[ trim( $plugin_file ) ] = $plugin_data;
 		}
 
@@ -150,14 +162,14 @@ class CD_APD_Core
 
 	/**
 	 * Custom plugin activation function.
-	 * 
+	 *
 	 * @since  0.1
 	 * @param  array $plugins
 	 * @param  string $context
 	 * @param  bool $silent
 	 * @return void
 	 */
-	public function activate_plugin( $plugin, $context, $silent = false ) 
+	public function activate_plugin( $plugin, $context, $silent = false )
 	{
 		$plugin = trim( $plugin );
 
@@ -169,17 +181,17 @@ class CD_APD_Core
 		$valid = $this->validate_plugin( $plugin, $context );
 
 		if ( is_wp_error( $valid ) )
-			return $valid;
+			return print $valid->get_error_message();
 
 		if ( ! in_array( $plugin, $current ) )
 		{
 			if ( ! empty( $redirect ) )
 			{
 				// we'll override this later if the plugin can be included without fatal error
-				wp_redirect( add_query_arg( 
+				wp_redirect( add_query_arg(
 					 '_error_nonce'
 					,wp_create_nonce( "plugin-activation-error_{$plugin}" )
-					,$redirect 
+					,$redirect
 				) );
 			}
 
@@ -216,7 +228,7 @@ class CD_APD_Core
 
 	/**
 	 * Deactivate custom plugins
-	 * 
+	 *
 	 * @since  0.1
 	 * @param  array $plugins
 	 * @param  string $context
@@ -227,7 +239,7 @@ class CD_APD_Core
 	{
 		$current = get_option( "active_plugins_{$context}", array() );
 
-		foreach ( (array) $plugins as $plugin ) 
+		foreach ( (array) $plugins as $plugin )
 		{
 			$plugin = trim( $plugin );
 			if ( ! in_array( $plugin, $current ) ) continue;
@@ -254,13 +266,13 @@ class CD_APD_Core
 
 	/**
 	 * Checks to see whether the plugin is valid and can be activated.
-	 * 
+	 *
 	 * @uses validate_file To make sure the plugin name is okay.
 	 * @param  string $plugin
 	 * @return array $context
 	 * @return WP_Error|string WP_Error object on failure, the plugin to include on success.
 	 */
-	public function validate_plugin( $plugin, $context ) 
+	public function validate_plugin( $plugin, $context )
 	{
 		$rv = true;
 		if ( validate_file( $plugin ) )

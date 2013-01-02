@@ -13,7 +13,7 @@ License:      MIT
 
 /**
  * Registers a new plugin directory
- * 
+ *
  * @example
  * $args Array (Valid args for `root`) 'content', 'plugins', 'muplugins', 'root'
  * The new directories must be subdirectories of the following WP file system constants:
@@ -21,7 +21,7 @@ License:      MIT
  * 'plugins':   WP_PLUGIN_DIR
  * 'muplugins': WPMU_PLUGIN_DIR
  * 'root':      one level below WP_CONTENT_DIR
- * 
+ *
  * @return void
  */
 function cd_apd_register_additional_plugin_directories()
@@ -31,7 +31,8 @@ function cd_apd_register_additional_plugin_directories()
 		return;
 
 	// Call the public API function once for every directory you want to add.
-	register_plugin_directory( array( 
+	// If this doesn't work, please choose a label without spaces
+	register_plugin_directory( array(
 		 'dir'   => 'example_plugin_directory'
 		,'label' => 'Example Label for the list table'
 		,'root'  => 'plugins'
